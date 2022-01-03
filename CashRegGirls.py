@@ -29,20 +29,32 @@ period=str(monthName+' 20'+year)
 cl = calendar.Calendar()
 
 dateList = []  # Date and Month for Charts
+
 for i in cl.itermonthdays(int('20'+year), int(monthNum)):
     if i != 0:
         dateList.append(str(i) + " " + monthName[:3])
+        # dateListx.append(str(i))
 
 week_days = {'0': ' Пн', '1':' Вт', '2':' Ср', '3':' Чт', '4':' Пт', '5':' Сб', '6':' Вс'}
 d = calendar.monthrange(int('20'+year), int(monthNum))[0] # Adding the week day
+
 dateList2 = []
+dateChexVIA = {} # Dicts for counting checks by days
+dateChexRIE = {}
+dateChexSHII = {}
+
 for i in dateList:
     dates = i + week_days[str(d)]
+    dateChexVIA[dates] = 0
+    dateChexRIE[dates] = 0
+    dateChexSHII[dates] = 0
     dateList2.append(dates)
     if d == 6:
         d = 0
     else:
         d += 1
+
+# dateChexTuple = dateList2
 
 # Number and list of girls
 entreList = []
@@ -142,24 +154,37 @@ for i in range(4, sh_IP_chex.max_row+1):
     order = sh_IP_chex.cell(row=i, column=7).value
     checkSum = sh_IP_chex.cell(row=i, column=8).value
     ent = sh_IP_chex.cell(row=i, column=5).value
+    # dd = str(sh_IP_chex.cell(row=i, column=3).value[:3])
     if ent == entreList[0]:
         girlsVIAchex[name] += 1
         girlsVIAorders[name] += order
         girlsVIAsums[name] += checkSum
         chexNumVIA +=1
         checkSumVIA.append(checkSum)
+        for cd in dateChexVIA.keys():  # Counts checks by entr. and days
+            checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
+            if checkDate == int(cd[:2]):
+                dateChexVIA[cd] += 1
     elif ent == entreList[1]:
         girlsRIEchex[name] += 1
         girlsRIEorders[name] += order
         girlsRIEsums[name] += checkSum
         chexNumRIE +=1
         checkSumRIE.append(checkSum)
+        for cd in dateChexRIE.keys():  # Counts checks by entr. and days
+            checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
+            if checkDate == int(cd[:2]):
+                dateChexRIE[cd] += 1
     elif ent == entreList[2]:
         girlsSHIIchex[name] += 1
         girlsSHIIorders[name] += order
         girlsSHIIsums[name] += checkSum  # No int()
         chexNumSHII +=1
         checkSumSHII.append(checkSum)
+        for cd in dateChexSHII.keys():  # Counts checks by entr. and days
+            checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
+            if checkDate == int(cd[:2]):
+                dateChexSHII[cd] += 1
 
 # Mean, median, mode
 def mean(sumList):
@@ -374,7 +399,7 @@ for i in girlsSHIIchexSorted.values():  # Inserting list sorted by check qty
     wsh4.cell(row=row, column=4).value = girlsSHIIorders.get(getKeySHII(i))
     row += 1
 
-# VIA Chart Data
+# Time Intervals Chart Data
 row += 2
 row2 = row
 wsh4.cell(row=row, column=8).value = 'БД1'
@@ -394,8 +419,9 @@ for i in timeIntervalsVIA.keys():
 row -= 1
 
 
-# Bar Chart
+# Time Intervals Bar Chart
 timeIntervalsChart = BarChart()
+timeIntervalsChart.title = 'Статистика по часам'
 chartCats = Reference(worksheet=wsh4,
                       min_row=row2+1, max_row=row,
                       min_col=7, max_col=7)
@@ -405,9 +431,47 @@ chartData = Reference(worksheet=wsh4,
 timeIntervalsChart.add_data(chartData, titles_from_data=True)
 timeIntervalsChart.x_axis.title = "Временные интервалы"
 timeIntervalsChart.y_axis.title = "Кол-во чеков по ИП"
-timeIntervalsChart.width = 16
+timeIntervalsChart.width = 25
 wsh4.add_chart(timeIntervalsChart, "A62")
 timeIntervalsChart.set_categories(chartCats)
+
+
+# Week Days Chart Data
+row += 3
+row2 = row
+wsh4.cell(row=row, column=8).value = 'ВИА'
+wsh4.cell(row=row, column=9).value = 'РИЭ'
+wsh4.cell(row=row, column=10).value = 'ШИИ'
+row += 1
+
+for i in dateChexVIA.keys():
+    j = dateChexVIA[i]
+    k = dateChexRIE[i]
+    l = dateChexSHII[i]
+    wsh4.cell(row=row, column=7).value = i
+    wsh4.cell(row=row, column=8).value = j
+    wsh4.cell(row=row, column=9).value = k
+    wsh4.cell(row=row, column=10).value = l
+    row += 1
+row -= 1
+
+# Week Days Chart
+week_daysChart = BarChart()
+week_daysChart.title = 'Статистика по дням недели'
+chartCats = Reference(worksheet=wsh4,
+                      min_row=row2+1, max_row=row,
+                      min_col=7, max_col=7)
+chartData = Reference(worksheet=wsh4,
+                      min_row=row2, max_row=row,
+                      min_col=8, max_col=10)
+week_daysChart.add_data(chartData, titles_from_data=True)
+week_daysChart.x_axis.title = "Дни месяца, дни недели"
+week_daysChart.y_axis.title = "Кол-во чеков по ИП"
+week_daysChart.width = 25
+wsh4.add_chart(week_daysChart, "A89")
+week_daysChart.set_categories(chartCats)
+
+
 
 wsh4.print_area = 'A1:I77'
 
