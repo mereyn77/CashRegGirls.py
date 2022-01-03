@@ -473,7 +473,7 @@ week_daysChart.set_categories(chartCats)
 
 
 
-wsh4.print_area = 'A1:I77'
+wsh4.print_area = 'A1:I97'
 
 wbb4.save(str(workloadFile))
 wbb4.close()
