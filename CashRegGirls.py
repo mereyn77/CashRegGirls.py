@@ -1,3 +1,5 @@
+import os
+
 import openpyxl
 from openpyxl.styles import NamedStyle, Border, Side, Font, GradientFill, Alignment, PatternFill, Color
 from openpyxl.writer.excel import save_workbook
@@ -146,6 +148,9 @@ chexNumSHII = 0
 checkSumVIA = []
 checkSumRIE = []
 checkSumSHII = []
+maxValVIA = 0
+maxValRIE = 0
+maxValSHII = 0
 
 for i in range(4, sh_IP_chex.max_row+1):
     name = sh_IP_chex.cell(row=i, column=6).value
@@ -161,6 +166,9 @@ for i in range(4, sh_IP_chex.max_row+1):
         girlsVIAsums[name] += checkSum
         chexNumVIA +=1
         checkSumVIA.append(checkSum)
+        if checkSum > maxValVIA:  # The maximum check sum
+            maxValVIA = round(checkSum, 0)
+            maxValVIADate = sh_IP_chex.cell(row=i, column=3).value
         for cd in dateChexVIA.keys():  # Counts checks by entr. and days
             checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
             if checkDate == int(cd[:2]):
@@ -171,6 +179,9 @@ for i in range(4, sh_IP_chex.max_row+1):
         girlsRIEsums[name] += checkSum
         chexNumRIE +=1
         checkSumRIE.append(checkSum)
+        if checkSum > maxValRIE:  # The maximum check sum
+            maxValRIE = round(checkSum, 0)
+            maxValRIEDate = sh_IP_chex.cell(row=i, column=3).value
         for cd in dateChexRIE.keys():  # Counts checks by entr. and days
             checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
             if checkDate == int(cd[:2]):
@@ -181,6 +192,9 @@ for i in range(4, sh_IP_chex.max_row+1):
         girlsSHIIsums[name] += checkSum  # No int()
         chexNumSHII +=1
         checkSumSHII.append(checkSum)
+        if checkSum > maxValSHII:  # The maximum check sum
+            maxValSHII = round(checkSum, 0)
+            maxValSHIIDate = sh_IP_chex.cell(row=i, column=3).value
         for cd in dateChexSHII.keys():  # Counts checks by entr. and days
             checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
             if checkDate == int(cd[:2]):
@@ -247,13 +261,25 @@ wbb1.close()
 
 # Import and process data from files 'Hours'
 
-# df = pd.read_excel('ШИИ_чеки.xls', header = None)
-# df.to_excel('ШИИ_чеки.xlsx', index = False, header = False)
-# wbb3 = openpyxl.load_workbook('ШИИ_чеки.xlsx')
-#
-# sh_SHIIchex = wbb3.worksheets[0]
-
-
+df = pd.read_excel('ИП_часы.xls', header = None)
+df.to_excel('ИП_часы.xlsx', index = False, header = False)  # This file may not be needed
+wbb3 = openpyxl.load_workbook('ИП_часы.xlsx')
+hours_IP = wbb3.worksheets[0]
+hours_IP.max_row-3
+cas = 'Кассиры'
+hours_VIA = 0
+hours_RIE = 0
+hours_SHII = 0
+for i in range (1, hours_IP.max_row):
+    dptName = str(hours_IP.cell(row=i, column=5).value)
+    if cas in dptName and str(entreList[0]) in dptName:
+        hours_VIA += hours_IP.cell(row=i, column=6).value
+    elif cas in dptName and str(entreList[1]) in dptName:
+        hours_RIE += hours_IP.cell(row=i, column=6).value
+    elif cas in dptName and str(entreList[2]) in dptName:
+        hours_SHII += hours_IP.cell(row=i, column=6).value
+wbb3.close()
+os.remove('ИП_часы.xlsx')
 
 
 # wbb4 = xlsxwriter.Workbook('Нагрузка кассы.xlsx')
@@ -285,7 +311,7 @@ cellFillGreenish = PatternFill(start_color='CCFF99', end_color='CCFF99', fill_ty
 
 # Drawing the table
 for i in range(3, 7):
-    for j in range(1, 13):
+    for j in range(1, 15):
         wsh4.cell(row=i, column=j).border = squareBorder
         wsh4.cell(row=i, column=j).alignment = alignCenter
         if i == 3:
@@ -300,6 +326,8 @@ for j in range(2, 7):
     wsh4.row_dimensions[j].height = 23
 for i in cellList:
     wsh4.column_dimensions[i].width = 11
+wsh4.column_dimensions['M'].width = 15
+wsh4.column_dimensions['N'].width = 14
 
 wsh4['E2'] = 'СТАТИСТИКА ПО КАССАМ'
 wsh4['E2'].font = boldFont
@@ -311,14 +339,15 @@ wsh4['A4'] = '  ИП Вербовская И.А.'
 wsh4['A5'] = '  ИП Рейн И.Э.'
 wsh4['A6'] = '  ИП Ширяев И.И.'
 headerList = ['Кол-во сотр.', 'Кол-во чек.', 'Заказов', 'Всего часов',
-              'Чек / сотр.', 'Заказ / сотр.', 'Час / сотр.', 'Чек / час', 'Средний чек', 'Медиана', 'Мода']
+              'Чек / сотр.', 'Заказ / сотр.', 'Час / сотр.', 'Чек / час', 'Средний чек', 'Медиана', 'Мода',
+              'Макс. чек', 'Дата чека']
 col = 2
 for i in headerList:
     wsh4.cell(row=3, column=col).value = i
     col += 1
 
 for i in range(4, 7):
-    for j in range(1, 13):
+    for j in range(1, 15):
         wsh4.cell(row=i, column=j).font = plainFont
 
 
@@ -332,19 +361,21 @@ wsh4['C6'] = chexNumSHII
 wsh4['D4'] = orderNumVIA
 wsh4['D5'] = orderNumRIE
 wsh4['D6'] = orderNumSHII
-
+wsh4['E4'] = hours_VIA
+wsh4['E5'] = hours_RIE
+wsh4['E6'] = hours_SHII
 wsh4['F4'] = round(chexNumVIA /  girlsNumVIA, 0)
 wsh4['F5'] = round(chexNumRIE /  girlsNumRIE, 0)
 wsh4['F6'] = round(chexNumSHII /  girlsNumSHII, 0)
 wsh4['G4'] = round(orderNumVIA /  girlsNumVIA, 1)
 wsh4['G5'] = round(orderNumRIE /  girlsNumRIE, 1)
 wsh4['G6'] = round(orderNumSHII /  girlsNumSHII, 1)
-wsh4['H4'] = '=E4 / B4'
-wsh4['H5'] = '=E5 / B5'
-wsh4['H6'] = '=E6 / B6'
-wsh4['I4'] = '=C4 / E4'
-wsh4['I5'] = '=C5 / E5'
-wsh4['I6'] = '=C6 / E6'
+wsh4['H4'] = round(hours_VIA / girlsNumVIA, 1) #'=ОКРУГЛ(E4/B4;1)'
+wsh4['H5'] = round(hours_RIE / girlsNumRIE, 1) # '=ОКРУГЛ(E5/B5;1)'
+wsh4['H6'] = round(hours_SHII / girlsNumSHII, 1) #'=ОКРУГЛ(E6/B6;1)'
+wsh4['I4'] = round(chexNumVIA / hours_VIA, 1) #'=C4 / E4'
+wsh4['I5'] = round(chexNumRIE / hours_RIE, 1) #'=C5 / E5'
+wsh4['I6'] = round(chexNumSHII / hours_SHII, 1) #'=C6 / E6'
 wsh4['J4'] = checkMeanVIA
 wsh4['J5'] = checkMeanRIE
 wsh4['J6'] = checkMeanSHII
@@ -354,8 +385,21 @@ wsh4['K6'] = round(checkMedianSHII, 0)
 wsh4['L4'] = checkModeVIA
 wsh4['L5'] = checkModeRIE
 wsh4['L6'] = checkModeSHII
+wsh4['M4'] = maxValVIA
+wsh4['M5'] = maxValRIE
+wsh4['M6'] = maxValSHII
+wsh4['N4'] = maxValVIADate
+wsh4['N5'] = maxValRIEDate
+wsh4['N6'] = maxValSHIIDate
 
-# wsh4['F4'].value="{:,}".format().replace(',', ' ')
+wsh4.cell(row=4, column=3).value="{:,}".format(chexNumVIA).replace(',', ' ')
+wsh4.cell(row=5, column=3).value="{:,}".format(chexNumRIE).replace(',', ' ')
+wsh4.cell(row=6, column=3).value="{:,}".format(chexNumSHII).replace(',', ' ')
+
+wsh4.cell(row=4, column=13).value = "{:,}".format(maxValVIA).replace(',', ' ')
+wsh4.cell(row=5, column=13).value = "{:,}".format(maxValRIE).replace(',', ' ')
+wsh4.cell(row=6, column=13).value = "{:,}".format(maxValSHII).replace(',', ' ')
+
 
 
 # Girls' personal stats part
