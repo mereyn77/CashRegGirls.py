@@ -1,5 +1,4 @@
 import os
-
 import openpyxl
 from openpyxl.styles import NamedStyle, Border, Side, Font, GradientFill, Alignment, PatternFill, Color
 from openpyxl.writer.excel import save_workbook
@@ -8,9 +7,8 @@ from openpyxl.chart import BarChart, Reference
 import pandas as pd
 import easygui
 import statistics
+import datetime
 import calendar
-
-
 
 # Import and process data from files 'Checks'
 df = pd.read_excel('ИП_чеки.xls', header = None)
@@ -29,21 +27,23 @@ monthName=month_list[monthNum]
 period=str(monthName+' 20'+year)
 
 cl = calendar.Calendar()
-
 dateList = []  # Date and Month for Charts
 
 for i in cl.itermonthdays(int('20'+year), int(monthNum)):
     if i != 0:
         dateList.append(str(i) + " " + monthName[:3])
-        # dateListx.append(str(i))
 
 week_days = {'0': ' Пн', '1':' Вт', '2':' Ср', '3':' Чт', '4':' Пт', '5':' Сб', '6':' Вс'}
 d = calendar.monthrange(int('20'+year), int(monthNum))[0] # Adding the week day
+week_days2 = {'Пн': 0, 'Вт': 0, 'Ср': 0, 'Чт': 0, 'Пт': 0, 'Сб': 0, 'Вс': 0}
 
 dateList2 = []
 dateChexVIA = {} # Dicts for counting checks by days
 dateChexRIE = {}
 dateChexSHII = {}
+week_daysVIA = week_days2.copy()
+week_daysRIE = week_days2.copy()
+week_daysSHII = week_days2.copy()
 
 for i in dateList:
     dates = i + week_days[str(d)]
@@ -55,8 +55,6 @@ for i in dateList:
         d = 0
     else:
         d += 1
-
-# dateChexTuple = dateList2
 
 # Number and list of girls
 entreList = []
@@ -131,7 +129,6 @@ for i in range(4, sh_IP_chex.max_row+1):
     else:
         li[t[:3]+'30'] += 1
 
-
 # VIA Girls' personal statistics
 girlsVIAchex = dict.fromkeys(girlsVIA, 0)
 girlsVIAorders = dict.fromkeys(girlsVIA, 0)
@@ -159,7 +156,7 @@ for i in range(4, sh_IP_chex.max_row+1):
     order = sh_IP_chex.cell(row=i, column=7).value
     checkSum = sh_IP_chex.cell(row=i, column=8).value
     ent = sh_IP_chex.cell(row=i, column=5).value
-    # dd = str(sh_IP_chex.cell(row=i, column=3).value[:3])
+
     if ent == entreList[0]:
         girlsVIAchex[name] += 1
         girlsVIAorders[name] += order
@@ -167,7 +164,7 @@ for i in range(4, sh_IP_chex.max_row+1):
         chexNumVIA +=1
         checkSumVIA.append(checkSum)
         if checkSum > maxValVIA:  # The maximum check sum
-            maxValVIA = round(checkSum, 0)
+            maxValVIA = int(checkSum)
             maxValVIADate = sh_IP_chex.cell(row=i, column=3).value
         for cd in dateChexVIA.keys():  # Counts checks by entr. and days
             checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
@@ -180,7 +177,7 @@ for i in range(4, sh_IP_chex.max_row+1):
         chexNumRIE +=1
         checkSumRIE.append(checkSum)
         if checkSum > maxValRIE:  # The maximum check sum
-            maxValRIE = round(checkSum, 0)
+            maxValRIE = int(checkSum)
             maxValRIEDate = sh_IP_chex.cell(row=i, column=3).value
         for cd in dateChexRIE.keys():  # Counts checks by entr. and days
             checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
@@ -193,12 +190,25 @@ for i in range(4, sh_IP_chex.max_row+1):
         chexNumSHII +=1
         checkSumSHII.append(checkSum)
         if checkSum > maxValSHII:  # The maximum check sum
-            maxValSHII = round(checkSum, 0)
+            maxValSHII = int(checkSum)
             maxValSHIIDate = sh_IP_chex.cell(row=i, column=3).value
         for cd in dateChexSHII.keys():  # Counts checks by entr. and days
             checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
             if checkDate == int(cd[:2]):
                 dateChexSHII[cd] += 1
+
+for ddt in dateChexVIA.keys():  # Weekdays check number VIA
+    wd = str(ddt[-2:])
+    week_daysVIA[wd] += dateChexVIA[ddt]
+    week_days2[wd] += dateChexVIA[ddt]
+for ddt in dateChexRIE.keys():  # Weekdays check number RIE
+    wd = str(ddt[-2:])
+    week_daysRIE[wd] += dateChexRIE[ddt]
+    week_days2[wd] += dateChexRIE[ddt]
+for ddt in dateChexSHII.keys():  # Weekdays check number SHII
+    wd = str(ddt[-2:])
+    week_daysSHII[wd] += dateChexSHII[ddt]
+    week_days2[wd] += dateChexSHII[ddt]  # Totals by weekdays
 
 # Mean, median, mode
 def mean(sumList):
@@ -230,9 +240,6 @@ checkModeVIA = statistics.mode(checkSumVIArounded)
 checkModeRIE = statistics.mode(checkSumRIErounded)
 checkModeSHII = statistics.mode(checkSumSHIIrounded)
 
-print(checkMedianVIA, checkMedianRIE, checkMedianSHII)
-print(checkModeVIA, checkModeRIE, checkModeSHII)
-
 # Sorting girls...chex by values
 valSort_girlsVIAchex = sorted(girlsVIAchex.values(), reverse=True)
 girlsVIAchexSorted = {}
@@ -262,7 +269,7 @@ wbb1.close()
 # Import and process data from files 'Hours'
 
 df = pd.read_excel('ИП_часы.xls', header = None)
-df.to_excel('ИП_часы.xlsx', index = False, header = False)  # This file may not be needed
+df.to_excel('ИП_часы.xlsx', index = False, header = False)
 wbb3 = openpyxl.load_workbook('ИП_часы.xlsx')
 hours_IP = wbb3.worksheets[0]
 hours_IP.max_row-3
@@ -280,12 +287,7 @@ for i in range (1, hours_IP.max_row):
         hours_SHII += hours_IP.cell(row=i, column=6).value
 wbb3.close()
 os.remove('ИП_часы.xlsx')
-
-
-# wbb4 = xlsxwriter.Workbook('Нагрузка кассы.xlsx')
-# wsh4 = wbb4.add_worksheet(period)
-# wsh4.set_margins(left=0.6, right=0.2, top=0.2, bottom=0.2)
-# wbb4.close()
+# ++++++++++++++++++++++++++++============================================================
 
 workloadFile = 'Нагрузка кассы.xlsx'
 try:
@@ -308,7 +310,6 @@ squareBorder = Border(top=borderLines,
 cellFillYellow = PatternFill(start_color='FFFFCC', end_color='FFFFCC', fill_type='solid')
 cellFillGreenish = PatternFill(start_color='CCFF99', end_color='CCFF99', fill_type='solid')
 
-
 # Drawing the table
 for i in range(3, 7):
     for j in range(1, 15):
@@ -326,10 +327,9 @@ for j in range(2, 7):
     wsh4.row_dimensions[j].height = 23
 for i in cellList:
     wsh4.column_dimensions[i].width = 11
-wsh4.column_dimensions['M'].width = 15
-wsh4.column_dimensions['N'].width = 14
+wsh4.column_dimensions['M'].width = 14
+wsh4.column_dimensions['N'].width = 13
 
-wsh4['E2'] = 'СТАТИСТИКА ПО КАССАМ'
 wsh4['E2'].font = boldFont
 wsh4['A3'] = period
 wsh4['A4'].alignment = alignLeft
@@ -462,7 +462,6 @@ for i in timeIntervalsVIA.keys():
     row += 1
 row -= 1
 
-
 # Time Intervals Bar Chart
 timeIntervalsChart = BarChart()
 timeIntervalsChart.title = 'Статистика по часам'
@@ -475,12 +474,11 @@ chartData = Reference(worksheet=wsh4,
 timeIntervalsChart.add_data(chartData, titles_from_data=True)
 timeIntervalsChart.x_axis.title = "Временные интервалы"
 timeIntervalsChart.y_axis.title = "Кол-во чеков по ИП"
-timeIntervalsChart.width = 25
+timeIntervalsChart.width = 25.2
 wsh4.add_chart(timeIntervalsChart, "A62")
 timeIntervalsChart.set_categories(chartCats)
 
-
-# Week Days Chart Data
+# Stats by Dates Chart Data
 row += 3
 row2 = row
 wsh4.cell(row=row, column=8).value = 'ВИА'
@@ -499,27 +497,78 @@ for i in dateChexVIA.keys():
     row += 1
 row -= 1
 
-# Week Days Chart
-week_daysChart = BarChart()
-week_daysChart.title = 'Статистика по дням недели'
+# Stats by Dates Chart
+datesChart = BarChart()
+datesChart.title = 'Статистика по дням за месяц'
 chartCats = Reference(worksheet=wsh4,
                       min_row=row2+1, max_row=row,
                       min_col=7, max_col=7)
 chartData = Reference(worksheet=wsh4,
                       min_row=row2, max_row=row,
                       min_col=8, max_col=10)
+datesChart.add_data(chartData, titles_from_data=True)
+datesChart.x_axis.title = "Дни месяца, дни недели"
+datesChart.y_axis.title = "Кол-во чеков по ИП"
+datesChart.width = 25.2
+wsh4.add_chart(datesChart, "A89")
+datesChart.set_categories(chartCats)
+
+# Week Days Chart Data
+row = 63
+row2 = row
+wsh4.cell(row=row, column=3).value = 'ВИА'
+wsh4.cell(row=row, column=4).value = 'РИЭ'
+wsh4.cell(row=row, column=5).value = 'ШИИ'
+row += 1
+
+for i in week_days2.keys():
+    j = week_daysVIA[i]
+    k = week_daysRIE[i]
+    l = week_daysSHII[i]
+    m = week_days2[i]
+    wsh4.cell(row=row, column=2).value = i
+    wsh4.cell(row=row, column=3).value = j
+    wsh4.cell(row=row, column=4).value = k
+    wsh4.cell(row=row, column=5).value = l
+    wsh4.cell(row=row, column=6).value = m
+    row += 1
+row -= 1
+
+# Week Days Chart
+week_daysChart = BarChart()
+week_daysChart.title = 'Статистика по дням недели'
+chartCats = Reference(worksheet=wsh4,
+                      min_row=row2+1, max_row=row,
+                      min_col=2, max_col=2)
+chartData = Reference(worksheet=wsh4,
+                      min_row=row2, max_row=row,
+                      min_col=3, max_col=5)
 week_daysChart.add_data(chartData, titles_from_data=True)
-week_daysChart.x_axis.title = "Дни месяца, дни недели"
+week_daysChart.x_axis.title = "Дни недели"
 week_daysChart.y_axis.title = "Кол-во чеков по ИП"
-week_daysChart.width = 25
-wsh4.add_chart(week_daysChart, "A89")
+week_daysChart.width = 15.2
+wsh4.add_chart(week_daysChart, "F10")
 week_daysChart.set_categories(chartCats)
 
-
+# All Entrepreneurs Week Days Chart
+week_daysChart = BarChart()
+week_daysChart.title = 'Статистика по дням недели суммарно'
+chartCats = Reference(worksheet=wsh4,
+                      min_row=row2+1, max_row=row,
+                      min_col=2, max_col=2)
+chartData = Reference(worksheet=wsh4,
+                      min_row=row2, max_row=row,
+                      min_col=6, max_col=6)
+week_daysChart.add_data(chartData, titles_from_data=True)
+week_daysChart.x_axis.title = "Дни недели"
+week_daysChart.y_axis.title = "Кол-во чеков суммарно"
+week_daysChart.width = 15.2
+wsh4.add_chart(week_daysChart, "F33")
+week_daysChart.set_categories(chartCats)
 
 wsh4.print_area = 'A1:I97'
 
 wbb4.save(str(workloadFile))
 wbb4.close()
 
-print(period)
+print('Accomplished')
