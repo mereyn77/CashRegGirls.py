@@ -139,6 +139,7 @@ girlsRIEsums = dict.fromkeys(girlsRIE, 0)
 girlsSHIIchex = dict.fromkeys(girlsSHII, 0)
 girlsSHIIorders = dict.fromkeys(girlsSHII, 0)
 girlsSHIIsums = dict.fromkeys(girlsSHII, 0)
+
 chexNumVIA = 0
 chexNumRIE = 0
 chexNumSHII = 0
@@ -196,6 +197,7 @@ for i in range(4, sh_IP_chex.max_row+1):
             checkDate = int(sh_IP_chex.cell(row=i, column=3).value[:2])
             if checkDate == int(cd[:2]):
                 dateChexSHII[cd] += 1
+
 
 for ddt in dateChexVIA.keys():  # Weekdays check number VIA
     wd = str(ddt[-2:])
@@ -266,7 +268,7 @@ for i in valSort_girlsSHIIchex:
 wbb1.close()
 # ++++++++++++++++++++++++++++============================================================
 
-# Import and process data from files 'Hours'
+# Import and process data from file 'Hours'
 
 df = pd.read_excel('ИП_часы.xls', header = None)
 df.to_excel('ИП_часы.xlsx', index = False, header = False)
@@ -287,6 +289,30 @@ for i in range (1, hours_IP.max_row):
         hours_SHII += hours_IP.cell(row=i, column=6).value
 wbb3.close()
 os.remove('ИП_часы.xlsx')
+
+# Import and process data from file 'Time Table'
+
+df = pd.read_excel('ИП_табель.xls', header = None)
+df.to_excel('ИП_табель.xlsx', index = False, header = False)
+wbb5 = openpyxl.load_workbook('ИП_табель.xlsx')
+sh5 = wbb5.worksheets[0]
+max_cols = sh5.max_column
+max_rows = sh5.max_row
+girlsHours = {}
+
+rowH = 9
+for i in range(rowH, max_rows+1):
+    gls = sh5.cell(row=rowH, column=1).value
+    girlsHours[gls] = sh5.cell(row=rowH, column=max_cols).value
+    rowH += 1
+
+
+wbb5.close()
+os.remove('ИП_табель.xlsx')
+
+
+
+
 # ++++++++++++++++++++++++++++============================================================
 
 workloadFile = 'Нагрузка кассы.xlsx'
@@ -410,11 +436,18 @@ def getKeyVIA(val):
         if val == value:
             return key
 
+# Function for inserting the personal hours data
+def getKeygirlsHours(val):
+    for key, value in girlsHours.items():
+        if val == key:
+            return key
+
 row = 10
 for i in girlsVIAchexSorted.values():  # Inserting list sorted by check qty
     wsh4.cell(row=row, column=3).value = i
     wsh4.cell(row=row, column=1).value = getKeyVIA(i)
     wsh4.cell(row=row, column=4).value = girlsVIAorders.get(getKeyVIA(i))
+    wsh4.cell(row=row, column=5).value = girlsHours.get(getKeygirlsHours(getKeyVIA(i)))
     row += 1
 
 # Function for returning dict. key by value
@@ -428,19 +461,23 @@ for i in girlsRIEchexSorted.values():  # Inserting list sorted by check qty
     wsh4.cell(row=row, column=3).value = i
     wsh4.cell(row=row, column=1).value = getKeyRIE(i)
     wsh4.cell(row=row, column=4).value = girlsRIEorders.get(getKeyRIE(i))
+    wsh4.cell(row=row, column=5).value = girlsHours.get(getKeygirlsHours(getKeyRIE(i)))
     row += 1
 
-# Function for returning dict. key by value
+# Functions for returning dict. key by value
 def getKeySHII(val):
     for key, value in girlsSHIIchexSorted.items():
         if val == value:
             return key
+
+
 
 row +=2
 for i in girlsSHIIchexSorted.values():  # Inserting list sorted by check qty
     wsh4.cell(row=row, column=3).value = i
     wsh4.cell(row=row, column=1).value = getKeySHII(i)
     wsh4.cell(row=row, column=4).value = girlsSHIIorders.get(getKeySHII(i))
+    wsh4.cell(row=row, column=5).value = girlsHours.get(getKeygirlsHours(getKeySHII(i)))
     row += 1
 
 # Time Intervals Chart Data
