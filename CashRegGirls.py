@@ -270,9 +270,9 @@ wbb1.close()
 
 # Import and process data from file 'Hours'
 
-df = pd.read_excel('ИП_часы.xls', header = None)
-df.to_excel('ИП_часы.xlsx', index = False, header = False)
-wbb3 = openpyxl.load_workbook('ИП_часы.xlsx')
+df = pd.read_excel('ИП_табель.xls', header = None)
+df.to_excel('ИП_табель.xlsx', index = False, header = False)
+wbb3 = openpyxl.load_workbook('ИП_табель.xlsx')
 hours_IP = wbb3.worksheets[0]
 hours_IP.max_row-3
 cas = 'Кассиры'
@@ -288,13 +288,13 @@ for i in range (1, hours_IP.max_row):
     elif cas in dptName and str(entreList[2]) in dptName:
         hours_SHII += hours_IP.cell(row=i, column=6).value
 wbb3.close()
-os.remove('ИП_часы.xlsx')
+os.remove('ИП_табель.xlsx')
 
 # Import and process data from file 'Time Table'
 
-df = pd.read_excel('ИП_табель.xls', header = None)
-df.to_excel('ИП_табель.xlsx', index = False, header = False)
-wbb5 = openpyxl.load_workbook('ИП_табель.xlsx')
+df = pd.read_excel('ИП_график.xls', header = None)
+df.to_excel('ИП_график.xlsx', index = False, header = False)
+wbb5 = openpyxl.load_workbook('ИП_график.xlsx')
 sh5 = wbb5.worksheets[0]
 max_cols = sh5.max_column
 max_rows = sh5.max_row
@@ -308,7 +308,7 @@ for i in range(rowH, max_rows+1):
 
 
 wbb5.close()
-os.remove('ИП_табель.xlsx')
+os.remove('ИП_график.xlsx')
 
 
 
